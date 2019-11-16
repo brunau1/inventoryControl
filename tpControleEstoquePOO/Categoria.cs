@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace tpControleEstoquePOO
+namespace testeXML
 {
     class Categoria
     {
@@ -15,6 +15,12 @@ namespace tpControleEstoquePOO
         public Categoria(string nome, string descricao)
         {
             id = Guid.NewGuid().ToString().Substring(9, 4).ToUpper();
+            this.nome = nome;
+            this.descricao = descricao;
+        }
+        public Categoria(string id, string nome, string descricao)
+        {
+            this.id = id;
             this.nome = nome;
             this.descricao = descricao;
         }

@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Produtos>
+  <Produto id="E416" idCategoria="909" nome="baruel" preco="20,5" qtdEstoque="5" qtdMinEstoque="1" />
+  <Produto id="BEA5" idCategoria="888" nome="meu carai" preco="5,5" qtdEstoque="3" qtdMinEstoque="1" />
+</Produtos>

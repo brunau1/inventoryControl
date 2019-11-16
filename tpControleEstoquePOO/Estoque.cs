@@ -2,150 +2,141 @@
 using System.Linq;
 using System.Xml.Linq;
 
-namespace tpControleEstoquePOO
+namespace testeXML
 {
     class Estoque
     {
         XElement produtos, categorias;
+        string prodPath, catPath;
 
         public Estoque()
         {
-            produtos = XElement.Load(@"C:\produtos.xml");
-            categorias = XElement.Load(@"C:\categorias.xml");
+            carregaArquivos();
         }
 
-        /// <summary>
-        /// Função que registra um produto no arquivo produtos.xml
-        /// </summary>
-        /// <param name="produto"></param>
+        public void carregaArquivos()
+        {
+            prodPath = "../../produtos.xml";
+            catPath = "../../categorias.xml";
+            produtos = XElement.Load(prodPath);
+            categorias = XElement.Load(catPath);
+        }
+
         public void inserirProduto(Produto produto)
         {
-            XElement novoProduto = new XElement("Produto",
-                                     new XElement("id", produto.nome),
-                                     new XElement("idCategoria", produto.nome),
-                                     new XElement("nome", produto.nome),
-                                     new XElement("preco", produto.nome),
-                                     new XElement("qtdEstoque", produto.nome),
-                                     new XElement("qtdMinEstoque", produto.nome)
-                                     );
-            produtos.Add(novoProduto);
-            produtos.Save(@"C:\produtos.xml");
+            XElement p = new XElement("Produto");
+            p.Add(new XAttribute("id", produto.id));
+            p.Add(new XAttribute("idCategoria", produto.idCategoria));
+            p.Add(new XAttribute("nome", produto.nome));
+            p.Add(new XAttribute("preco", produto.preco.ToString()));
+            p.Add(new XAttribute("qtdEstoque", produto.qtdEstoque.ToString()));
+            p.Add(new XAttribute("qtdMinEstoque", produto.qtdMinEstoque.ToString()));
+            produtos.Add(p);
+            produtos.Save(prodPath);
         }
-        /// <summary>
-        /// Recebe um id e um produto com as novas informações para alterar o registro existente
-        /// </summary>
-        /// <param name="idProduto"></param>
-        /// <param name="novoProduto"></param>
+
         public void editarProduto(string idProduto, Produto novoProduto)
         {
-            var produtoTemp = from item in produtos.Elements("Produto")
-                              where ((string)item.Element("id")).Equals(idProduto)
-                              select item;
-            foreach (XElement element in produtoTemp)
+            XElement prod = produtos.Elements().Where(p => p.Attribute("id").Value.Equals(novoProduto.id.ToString())).First();
+            if (prod != null)
             {
-                element.SetElementValue("nome", novoProduto.nome);
-                element.SetElementValue("preco", novoProduto.preco);
+                prod.Attribute("nome").SetValue(novoProduto.nome);
+                prod.Attribute("preco").SetValue(novoProduto.preco);
+                prod.Attribute("idCategoria").SetValue(novoProduto.idCategoria);
             }
-            produtos.Save(@"C:\produtos.xml");
+            produtos.Save(prodPath);
         }
 
-        /// <summary>
-        /// Retorna o resultado da consulta dos produtos registrados
-        /// </summary>
-        /// <returns></returns>
-        public object consultarProdutos()
+        public List<Produto> consultarProdutos()
         {
-            var consulta = from produto in produtos.Elements("Produto")
-                           orderby (string)produto.Element("Nome")
-                           select new
-                           {
-                               id = (string)produto.Element("id"),
-                               nome = (string)produto.Element("nome"),
-                               preco = (double)produto.Element("preco"),
-                               qtdEstoque = (int)produto.Element("qtdEstoque"),
-                           };
-            return consulta;
+            List<Produto> prods = new List<Produto>();
+            foreach (XElement item in produtos.Elements())
+            {
+                Produto p = new Produto(
+                    (string)item.Attribute("id").Value,
+                    (string)item.Attribute("idCategoria").Value,
+                    (string)item.Attribute("nome").Value,
+                    double.Parse(item.Attribute("preco").Value),
+                    int.Parse(item.Attribute("qtdEstoque").Value),
+                    int.Parse(item.Attribute("qtdMinEstoque").Value)
+                    );
+                prods.Add(p);
+            }
+            return prods;
         }
 
-        /// <summary>
-        /// remove um produto registrado de acordo com o ID do produto
-        /// </summary>
-        /// <param name="idProduto"></param>
         public void deletarProduto(string idProduto)
         {
-            IEnumerable<XElement> produtoTemp = from item in produtos.Elements("Produto")
-                                                 where ((string)item.Element("id")).Equals(idProduto)
-                                                 select item;
-
-            foreach (XElement element in produtoTemp)
-                element.Element("id").Parent.Remove();
-            produtos.Save(@"C:\produtos.xml");
+            XElement prod = produtos.Elements().Where(p => p.Attribute("id").Value.Equals(idProduto)).First();
+            if (prod != null)
+            {
+                prod.Remove();
+            }
+            produtos.Save(prodPath);
         }
 
-        /// <summary>
-        /// Consulta produtos pertencentes a uma determinada categoria
-        /// </summary>
-        /// <param name="idCategoria"></param>
-        /// <returns></returns>
-        public object consultarProdutoPorCategoria(string idCategoria)
+        public List<Produto> consultarProdutoPorCategoria(string idCategoria)
         {
-            var consulta = from produto in produtos.Elements("Produto")
-                           where ((string)produto.Element("idCategoria")).Equals(idCategoria)
-                           orderby (string)produto.Element("Nome")
-                           select new
-                           {
-                               id = (string)produto.Element("id"),
-                               nome = (string)produto.Element("nome"),
-                               preco = (double)produto.Element("preco"),
-                               qtdEstoque = (int)produto.Element("qtdEstoque"),
-                           };
-            return consulta;
+            List<Produto> prods = new List<Produto>();
+            foreach (XElement item in produtos.Elements().Where(p => p.Attribute("id").Value.Equals(idCategoria)))
+            {
+                Produto p = new Produto(
+                    (string)item.Attribute("id").Value,
+                    (string)item.Attribute("idCategoria").Value,
+                    (string)item.Attribute("nome").Value,
+                    double.Parse(item.Attribute("preco").Value),
+                    int.Parse(item.Attribute("qtdEstoque").Value),
+                    int.Parse(item.Attribute("qtdMinEstoque").Value)
+                    );
+                prods.Add(p);
+            }
+            return prods;
         }
+
+        //--------------------------------------------------------------------------
+        //------------------------ C A T E G O R I A S -----------------------------
+        //--------------------------------------------------------------------------
 
         public void inserirCategoria(Categoria categoria)
         {
-            XElement novaCategoria = new XElement("Categoria",
-                                     new XElement("id", categoria.id),
-                                     new XElement("nome", categoria.nome),
-                                     new XElement("descricao", categoria.descricao)
-                                     );
-            produtos.Add(novaCategoria);
-            produtos.Save(@"C:\categorias.xml");
+            XElement p = new XElement("Categoria");
+            p.Add(new XAttribute("id", categoria.id));
+            p.Add(new XAttribute("nome", categoria.nome));
+            p.Add(new XAttribute("descricao", categoria.descricao));
+            categorias.Add(p);
+            categorias.Save(catPath);
         }
 
         public void editarcategoria(string idCategoria, Categoria novaCategoria)
-        {
-            var categoriaTemp = from item in produtos.Elements("Categoria")
-                              where ((string)item.Element("id")).Equals(idCategoria)
-                              select item;
-            foreach (XElement element in categoriaTemp)
-                element.SetElementValue("descricao", novaCategoria.descricao);
-            
-            produtos.Save(@"C:\categorias.xml");
+        { 
+            XElement cat = categorias.Elements().Where(c => c.Attribute("id").Value.Equals(novaCategoria.id)).First();
+            if (cat != null)
+                cat.Attribute("descricao").SetValue(novaCategoria.descricao);
+
+            categorias.Save(catPath);
         }
 
-        public object consultarCategorias()
+        public List<Categoria> consultarCategorias()
         {
-            var consulta = from categoria in produtos.Elements("Categoria")
-                           orderby (string)categoria.Element("nome")
-                           select new
-                           {
-                               id = (string)categoria.Element("id"),
-                               nome = (string)categoria.Element("nome"),
-                               descricao = (string)categoria.Element("descricao")
-                           };
-            return consulta;
+            List<Categoria> catList = new List<Categoria>();
+            foreach (XElement item in categorias.Elements())
+            {
+                Categoria c = new Categoria(
+                    (string)item.Attribute("id").Value,
+                    (string)item.Attribute("nome").Value,
+                    (string)item.Attribute("descricao").Value
+                    );
+                catList.Add(c);
+            }
+            return catList;
         }
 
         public void deletarCategoria(string idCategoria)
         {
-            IEnumerable<XElement> produtoTemp = from item in produtos.Elements("Categoria")
-                                                where ((string)item.Element("id")).Equals(idCategoria)
-                                                select item;
-
-            foreach (XElement element in produtoTemp)
-                element.Element("id").Parent.Remove();
-            produtos.Save(@"C:\categorias.xml");
+            XElement cat = categorias.Elements().Where(c => c.Attribute("id").Value.Equals(idCategoria)).First();
+            if (cat != null)
+                cat.Remove();
+            categorias.Save(catPath);
         }
     }
 }

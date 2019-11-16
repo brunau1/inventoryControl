@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace tpControleEstoquePOO
+namespace testeXML
 {
     class Produto
     {
@@ -15,9 +15,19 @@ namespace tpControleEstoquePOO
         public int qtdEstoque { get; set; }
         public int qtdMinEstoque { get; set; }
 
-        public Produto(string nome, double preco, string idCategoria, int qtdEstoque, int qtdMinEstoque)
+        public Produto(string nome, string idCategoria, double preco, int qtdEstoque, int qtdMinEstoque)
         {
             id = Guid.NewGuid().ToString().Substring(9, 4).ToUpper();
+            this.nome = nome;
+            this.preco = preco;
+            this.idCategoria = idCategoria;
+            this.qtdEstoque = qtdEstoque;
+            this.qtdMinEstoque = qtdMinEstoque;
+        }
+
+        public Produto(string id, string idCategoria, string nome, double preco, int qtdEstoque, int qtdMinEstoque)
+        {
+            this.id = id;
             this.nome = nome;
             this.preco = preco;
             this.idCategoria = idCategoria;
