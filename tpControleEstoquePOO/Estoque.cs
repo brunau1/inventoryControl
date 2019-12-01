@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -59,6 +62,44 @@ namespace testeXML
         .Save(catPath);
         }
 
+        //recupera os valores do list e adiciona ao dataTable
+        public static DataTable ConvertTo<T>(IList<T> list)
+        {
+            DataTable table = CreateTable<T>();
+            Type entityType = typeof(T);
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(entityType);
+
+            foreach (T item in list)
+            {
+                DataRow row = table.NewRow();
+
+                foreach (PropertyDescriptor prop in properties)
+                {
+                    row[prop.Name] = prop.GetValue(item);
+                }
+
+                table.Rows.Add(row);
+            }
+
+            return table;
+        }
+
+        //cria um datatable
+        public static DataTable CreateTable<T>()
+        {
+            Type entityType = typeof(T);
+            DataTable table = new DataTable(entityType.Name);
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(entityType);
+
+            foreach (PropertyDescriptor prop in properties)
+            {
+                // HERE IS WHERE THE ERROR IS THROWN FOR NULLABLE TYPES
+                table.Columns.Add(prop.Name, prop.PropertyType);
+            }
+
+            return table;
+        }
+
         //cria um elemento XML e adiciona os atributos para criar um novo produto
         //deve receber como parametro um objeto do tipo "Produto"
         public void inserirProduto(Produto produto)
@@ -67,6 +108,7 @@ namespace testeXML
             p.Add(new XAttribute("id", produto.id));
             p.Add(new XAttribute("idCategoria", produto.idCategoria));
             p.Add(new XAttribute("nome", produto.nome));
+            p.Add(new XAttribute("descricao", produto.descricao));
             p.Add(new XAttribute("preco", produto.preco.ToString()));
             p.Add(new XAttribute("qtdEstoque", produto.qtdEstoque.ToString()));
             p.Add(new XAttribute("qtdMinEstoque", produto.qtdMinEstoque.ToString()));
@@ -82,6 +124,7 @@ namespace testeXML
             if (prod != null)
             {
                 prod.Attribute("nome").SetValue(novoProduto.nome);
+                prod.Attribute("descricao").SetValue(novoProduto.descricao);
                 prod.Attribute("preco").SetValue(novoProduto.preco);
                 prod.Attribute("idCategoria").SetValue(novoProduto.idCategoria);
                 prod.Attribute("qtdEstoque").SetValue(novoProduto.qtdEstoque);
@@ -92,7 +135,7 @@ namespace testeXML
 
         //retorna um "List" com os produtos encontrados
         //se não houver produtos é retornado um "List" vazio
-        public List<Produto> consultarProdutos()
+        public DataTable consultarProdutos()
         {
             List<Produto> prods = new List<Produto>();
             foreach (XElement item in produtos.Elements())
@@ -101,13 +144,14 @@ namespace testeXML
                     (string)item.Attribute("id").Value,
                     (string)item.Attribute("idCategoria").Value,
                     (string)item.Attribute("nome").Value,
+                    (string)item.Attribute("descricao").Value,
                     double.Parse(item.Attribute("preco").Value),
                     int.Parse(item.Attribute("qtdEstoque").Value),
                     int.Parse(item.Attribute("qtdMinEstoque").Value)
                     );
                 prods.Add(p);
             }
-            return prods;
+            return ConvertTo<Produto>(prods);
         }
 
         //exclui do arquivo o produto cujo "id" é fornecido como parametro
@@ -129,9 +173,9 @@ namespace testeXML
             }
         }
 
-        //retorna um "List" com os produtos encontrados de acordo com o "id" da categoria fornecido como parametro
-        //se não houver produtos é retornado um "List" vazio
-        public List<Produto> consultarProdutoPorCategoria(string idCategoria)
+        //retorna um "datatable" com os produtos encontrados de acordo com o "id" da categoria fornecido como parametro
+        //se não houver produtos é retornado um "datatable" vazio
+        public DataTable consultarProdutoPorCategoria(string idCategoria)
         {
             List<Produto> prods = new List<Produto>();
             foreach (XElement item in produtos.Elements().Where(p => p.Attribute("idCategoria").Value.Equals(idCategoria)))
@@ -140,13 +184,35 @@ namespace testeXML
                     (string)item.Attribute("id").Value,
                     (string)item.Attribute("idCategoria").Value,
                     (string)item.Attribute("nome").Value,
+                    (string)item.Attribute("descricao").Value,
                     double.Parse(item.Attribute("preco").Value),
                     int.Parse(item.Attribute("qtdEstoque").Value),
                     int.Parse(item.Attribute("qtdMinEstoque").Value)
                     );
                 prods.Add(p);
             }
-            return prods;
+            return ConvertTo<Produto>(prods);
+        }
+
+        //retorna um "datatable" com os produtos encontrados de acordo com a palavra passada por parametro
+        //se não houver produtos é retornado um "datatable" vazio
+        public DataTable consultarProdutoPorNomeOuDescricao(string subString)
+        {
+            List<Produto> prods = new List<Produto>();
+            foreach (XElement item in produtos.Elements().Where(p => p.Attribute("descricao").Value.Contains(subString) || p.Attribute("nome").Value.Contains(subString)))
+            {
+                Produto p = new Produto(
+                    (string)item.Attribute("id").Value,
+                    (string)item.Attribute("idCategoria").Value,
+                    (string)item.Attribute("nome").Value,
+                    (string)item.Attribute("descricao").Value,
+                    double.Parse(item.Attribute("preco").Value),
+                    int.Parse(item.Attribute("qtdEstoque").Value),
+                    int.Parse(item.Attribute("qtdMinEstoque").Value)
+                    );
+                prods.Add(p);
+            }
+            return ConvertTo<Produto>(prods);
         }
 
         //--------------------------------------------------------------------------
@@ -176,9 +242,9 @@ namespace testeXML
             categorias.Save(catPath);
         }
 
-        //retorna um "List" com as categorias encontradas
-        //se não houver categorias é retornado um "List" vazio
-        public List<Categoria> consultarCategorias()
+        //retorna um "datatable" com as categorias encontradas
+        //se não houver categorias é retornado um "datatable" vazio
+        public DataTable consultarCategorias()
         {
             List<Categoria> catList = new List<Categoria>();
             foreach (XElement item in categorias.Elements())
@@ -190,7 +256,7 @@ namespace testeXML
                     );
                 catList.Add(c);
             }
-            return catList;
+            return ConvertTo<Categoria>(catList); ;
         }
 
         //exclui do arquivo a categoria cujo "id" é fornecido como parametro
